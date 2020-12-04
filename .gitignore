@@ -1,2 +1,3 @@
 output/param/*.pth
 output/result/*.csv
+__pycache__/
