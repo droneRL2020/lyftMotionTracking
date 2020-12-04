@@ -32,9 +32,8 @@ class Trainer():
 
     def run(self):
         model = TopkNet(self.cfg).to(Global.DEVICE)
-        Global.load_weight(model, W_PATH)
-        optimizer = optim.Adam(model.parameters(), lr=1e-6)
         Global.load_weight(model, self.W_PATH)
+        optimizer = optim.Adam(model.parameters(), lr=1e-6)
         progress_bar = tqdm(range(self.cfg["train_params"]["max_num_steps"]))
         losses_train = []
         prelosses_train = []

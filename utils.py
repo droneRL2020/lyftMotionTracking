@@ -88,6 +88,31 @@ class Utils:
         return nav_pose_in_image #B,50,3
 
     @staticmethod
+    def map_writer_from_image_to_world(data, nav_pose_in_image, cfg):
+        ''' nav_pose_in_image[B,50,3], should loop each mode'''
+        nav_pose_in_image[:,:,0] -= 56
+        nav_pose_in_image[:,:,1] -= 112
+        nav_pose_in_image[:,:,1:] /= -1
+        result_yaw = nav_pose_in_image[:,:,2]
+        
+        rs = cfg["raster_params"]["raster_size"]
+        ec = cfg["raster_params"]["ego_center"]
+        bias = torch.tensor([rs[0] * ec[0], rs[1] * ec[1]])[None,None,:].to(Global.DEVICE) #1,1,2
+        nav_pose_in_image[:,:,:2] += bias  # B,50,2
+        navs_in_image = nav_pose_in_image[:,:,:2] / 2 # B,50,2
+        navs_in_image = torch.cat([navs_in_image, torch.ones((navs_in_image.size(0), 50,1)).to(Global.DEVICE)], dim=2) #(B,50,3)
+        
+        scale_image_tform_world = data["world_to_image"] #(B,3,3)
+        ori_image_tform_world = scale_image_tform_world / 2 #(B,3,3)
+        ori_world_tform_image = Utils.inverse(ori_image_tform_world) #(B,3,3)
+        navs_in_world = torch.matmul(ori_world_tform_image.to(Global.DEVICE), torch.transpose(navs_in_image,2,1).to(Global.DEVICE)) #(B,3,3) matmul (B,3,50) -> (B,3,50)
+        navs_in_world = torch.transpose(navs_in_world, 2,1) # (B,3,50) -> (B,50,3)
+        centroid = data["centroid"][:,None,:].to(torch.float).to(Global.DEVICE)  #(B,2) -> (B,1,2)
+        navs_in_world[:,:,:2] -= centroid # (B,50,2) - (B,1,2) -> (B,50,2)
+        
+        return navs_in_world[:,:,:2] #(B,50,2)
+
+    @staticmethod
     def inverse(a_tform_b):
         '''
         a_tform_b : [B,3,3]

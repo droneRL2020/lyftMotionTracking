@@ -32,6 +32,12 @@ train_data_loader:
   shuffle: True
   num_workers: 4
 
+test_data_loader:
+  key: "scenes/test.zarr"
+  batch_size: 32
+  shuffle: False
+  num_workers: 4
+
 train_params:
   checkpoint_every_n_steps: 5000
   max_num_steps: 75000
